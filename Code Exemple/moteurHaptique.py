@@ -1,35 +1,44 @@
-#Code exemple pour tester le fonctionnement du Moteur haptique DRV2605
-
-# Simple demo of the DRV2605 haptic feedback motor driver.
-# Will play all 117 effects in order for about a half second each.
-# Author: Tony DiCola
 import time
+import smbus
 
-import board
-import busio
+DRV_ADDR = 0x5A
+bus = smbus.SMBus(1)
 
-import adafruit_drv2605
+# Registres
+REG_MODE = 0x01
+REG_GO = 0x0C
+REG_SEQ0 = 0x04
+REG_OVERDRIVE = 0x0D
+REG_LIB_SEL = 0x03
 
+# Fonctions
 
-# Initialize I2C bus and DRV2605 module.
-i2c = busio.I2C(board.SCL, board.SDA)
-drv = adafruit_drv2605.DRV2605(i2c, address=0x5a)
+def initialiser_driver():
+    """Initialise le pilote DRV2605L."""
+    bus.write_byte_data(DRV_ADDR, REG_MODE, 0x00)       # Internal Trigger Mode
+    bus.write_byte_data(DRV_ADDR, REG_LIB_SEL, 0x01)    # Librairie 1 (ERM)
+    bus.write_byte_data(DRV_ADDR, REG_OVERDRIVE, 0xFF)  # Overdrive max
 
-# Main loop runs forever trying each effect (1-117).
-# See table 11.2 in the datasheet for a list of all the effect names and IDs.
-#   http://www.ti.com/lit/ds/symlink/drv2605.pdf
-effect_id = 1
-while True:
-    print('Playing effect #{0}'.format(effect_id))
-    drv.sequence[0] = adafruit_drv2605.Effect(effect_id)  # Set the effect on slot 0.
-    # You can assign effects to up to 7 different slots to combine
-    # them in interesting ways. Index the sequence property with a
-    # slot number 0 to 6.
-    # Optionally, you can assign a pause to a slot. E.g.
-    # drv.sequence[1] = adafruit_drv2605.Pause(0.5)  # Pause for half a second
-    drv.play()  # Play the effect.
-    time.sleep(0.5)
-    # Increment effect ID and wrap back around to 1.
-    effect_id += 1
-    if effect_id > 117:
-        effect_id = 1
+def definir_effet(effet_id: int):
+    """Définit l'effet à jouer."""
+    bus.write_byte_data(DRV_ADDR, REG_SEQ0, effet_id)
+
+def jouer_effet():
+    """Lance l'effet configuré et attend 1 seconde."""
+    bus.write_byte_data(DRV_ADDR, REG_GO, 0x01)
+    time.sleep(1)
+
+# Programme Principal
+
+if __name__ == "__main__":
+    initialiser_driver()
+
+    # Effet n°1 : Strong Click (dans la librairie 1)
+    EFFET_FORT_CLICK = 0x01
+    definir_effet(EFFET_FORT_CLICK)
+
+    jouer_effet()
+
+    # Exemple de second effet
+    # definer_effet(0x0A) # Effet 10 : Transition Click/Pop
+    # jouer_effet()
