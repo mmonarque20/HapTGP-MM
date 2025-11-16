@@ -1,64 +1,88 @@
-#Code exemple pour tester le fonctionnement du magnétomètre MT6701
+"""
+Cette librairie permet de calibrer le magnétomètre au 0 de notre choix 
+C'est aussi un programme permettant de tester le module MT6701
+ """
 
-from smbus2 import SMBus
-import math
 import time
+import smbus  
 
-# Define I2C bus number (e.g., 1 for Raspberry Pi 2/3/4)
+# --- Constantes I2C et Registres ---
 I2C_BUS_NUMBER = 1
-# Define the I2C address of your slave device (e.g., from i2cdetect)
-DEVICE_ADDRESS = 0x06   # Example: MT6701 address
-# Define the register address within the device to read/write
-REGISTER_DIR = 0x29 #DIR = 1 for CW (bit 1)
-REGISTER_ANGLE_MSB = 0x03   # Angle<13:6>
-REGISTER_ANGLE_LSB = 0x04   # Angle<5:0>
+DEVICE_ADDRESS = 0x06
+REGISTER_DIR = 0x29
+REGISTER_ANGLE_MSB = 0x03
+REGISTER_ANGLE_LSB = 0x04
+
+# --- Variables Globales d'État ---
+offset_angle = 0.0
+filtered_angle = 0.0
+
+def initMagneto(bus):
+    """Calibre le zéro du capteur en lisant l'angle actuel comme référence."""
+    global offset_angle
+    global filtered_angle
+
+    print("Place ton capteur à la position de référence et appuie sur Entrée pour calibrer le zéro.")
+    input()
+
+    # Configuration pour lecture CW
+    dir_val = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_DIR)
+    dir_val |= 0b00000010
+    bus.write_byte_data(DEVICE_ADDRESS, REGISTER_DIR, dir_val)
+
+    # Lecture MSB et LSB
+    msb = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_ANGLE_MSB)
+    lsb = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_ANGLE_LSB)
+
+    # Calcul de l'angle brut
+    raw = (msb << 6) | (lsb >> 2)
+    offset_angle = raw * (360.0 / 16384.0) #16384 = 14 bits = résolution du capteur
+
+    print(f"Zéro calibré à {offset_angle:.1f}°")
+    filtered_angle = 0.0
+
+def getAngle(bus):
+    """Retourne l'angle brut, corrigé et filtré."""
+    global filtered_angle
+
+    # Lecture brute
+    dir_val = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_DIR)
+    dir_val |= 0b00000010
+    bus.write_byte_data(DEVICE_ADDRESS, REGISTER_DIR, dir_val)
+
+    msb = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_ANGLE_MSB)
+    lsb = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_ANGLE_LSB)
+
+    raw = (msb << 6) | (lsb >> 2)
+    angle_brut = raw * (360.0 / 16384.0)
+
+    # Correction d'offset
+    angle_corrige = (angle_brut - offset_angle + 360) % 360
+
+    # Filtrage circulaire
+    prev = filtered_angle
+    new = angle_corrige
+    alpha = 0.1
+    seuil = 30
+
+    delta = (new - prev + 540) % 360 - 180
+
+    if abs(delta) > seuil:
+        filtered_angle = new
+    else:
+        filtered_angle = (prev + alpha * delta) % 360
+
+    return angle_brut, angle_corrige, filtered_angle
 
 
-#Ce type de filtre ne fonctionne pas avec les angles (passage de 360 à 0 !!!!)
-filtered_angle = 0
-alpha = 0.1 # must be between 0 and 1 inclusive
-
-
-def low_pass_filter(prev_value, new_value):
-    return alpha * prev_value + (1 - alpha) * new_value
-
-
-try:
-    while True:
-        # Open the I2C bus
-        with SMBus(I2C_BUS_NUMBER) as bus:
-        
-            # Read DIR REGISTER
-            bytes1 = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_DIR)
-            #Set direction clockwise
-            bytes1 = bytes1 |  0b00000010   #DIR = 1 for CW (bit 1)
-            # Write DIR REGISTER
-            bus.write_byte_data(DEVICE_ADDRESS, REGISTER_DIR, bytes1)
-                
-            #Read Angle MSB Register (Angle<13:6>) ... Bit7 to Bit0
-            bytes1 = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_ANGLE_MSB)
-            #print(f"Read byte from register {hex(REGISTER_ADDRESS_MSB)}: {hex(bytes1)}")
-        
-            #Read Angle LSB Register (Angle<5:0>) ... Bit7 to Bit2
-            bytes2 = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_ANGLE_LSB)
-            #print(f"Read byte from register {hex(REGISTER_ADDRESS_LSB)}: {hex(bytes2)}")
-        
-            # Concatenate bytes2 with bytes1
-            angle_int = bytes2 >> 2
-            angle_int = (bytes1 << 6) | angle_int 
-        
-            # Compute angle in degrees (14 bits)
-            new_angle = angle_int * (360.0/16384.0)
-
-            print(f"Angle is: {new_angle:.0f}")
-            
-            #filtered_angle = low_pass_filter(filtered_angle, new_angle)
-            #print(f"Angle is: {filtered_angle:.0f}")
-
-            time.sleep(0.5)     
-
-except FileNotFoundError:
-    print(f"Error: I2C bus {I2C_BUS_NUMBER} not found. Ensure I2C is enabled.")
-except OSError as e:
-    print(f"Error communicating with I2C device: {e}")
-    print("Check device address, connections, and permissions.")
+# --- Test local ---
+if __name__ == "__main__":
+    try:
+        bus = smbus.SMBus(I2C_BUS_NUMBER)
+        initMagneto(bus)
+        while True:
+            angle_brut, angle_corrige, angle_filtre = getAngle(bus)
+            print(f"Brut : {angle_brut:.1f}° | Corrigé : {angle_corrige:.1f}° | Filtré : {angle_filtre:.1f}°")
+            time.sleep(0.5)
+    except Exception as e:
+        print(f"Erreur d'exécution : {e}")
