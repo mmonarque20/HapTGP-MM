@@ -36,7 +36,7 @@ def create_text(text, scale, x, y, color=0xAA00FF):
     group = displayio.Group(scale=scale, x=x, y=y)
     label = Label(terminalio.FONT, text=text, color=color)
     group.append(label)
-    return group, label
+    return group   
 
 # Affiche la démo complète : fond, cercle, et deux textes
 def show_demo(display):
@@ -44,10 +44,10 @@ def show_demo(display):
     display.root_group = group
     group.append(create_background(color=0x000000))  
     group.append(create_circle(x=120, y=120, radius=100, color=0xFFFFFF))
-    group.append(create_text("Hello People!", x=50, y=120, color=0x00FF00))
-    group.append(create_text("It's Mary :)", x=50, y=150, color=0x0000FF))
+    group.append(create_text("Hello People!",scale=2, x=50, y=120, color=0x00FF00))
+    group.append(create_text("It's Mary :)",scale=2, x=50, y=150, color=0x0000FF))
 
-# Éteint visuellement l’écran en envoyant la commande SLEEP_IN
+# Éteint visuellement l’écran 
 def sleep_display(display):
     display.root_group = None
     time.sleep(0.5)
