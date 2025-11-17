@@ -1,38 +1,41 @@
-#Code exemple pour tester le fonctionnement du Buzzer
-
-import RPi.GPIO as GPIO # pyright: ignore[reportMissingModuleSource]
+import RPi.GPIO as GPIO  # pyright: ignore[reportMissingModuleSource]
 import time
 
-BuzzerPin = 12  # D12 = GPIO12 = pin physique 32
+# ─── Configuration ─────────────────────────────────────────────────────────────
 
-# Initialisation GPIO
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(BuzzerPin, GPIO.OUT)
+BUZZER_PIN = 12  # GPIO12 = pin physique 32
 
-# Initialisation PWM sur le buzzer (valeur par défaut, sera modifiée dans la boucle)
-pwm = GPIO.PWM(BuzzerPin, 440)
+# ─── Fonctions ─────────────────────────────────────────────────────────────────
 
-try:
-    while True:
-        # Premier bip
-        pwm.ChangeFrequency(500)  # son à 500 Hz
-        pwm.start(50)
-        time.sleep(0.5)
-        pwm.stop()
+def init_buzzer(pin=BUZZER_PIN):
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(pin, GPIO.OUT)
+    pwm = GPIO.PWM(pin, 440)  # Fréquence par défaut
+    return pwm
 
-        time.sleep(2)  # pause de 2 secondes
-
-        # Deuxième bip
-        pwm.ChangeFrequency(1000)  # son plus aigu
-        pwm.start(50)
-        time.sleep(0.5)
-        pwm.stop()
-
-        time.sleep(2)
-
-except KeyboardInterrupt:
-    print("\nArrêt du programme.")
-finally:
+def bip(pwm, freq, duration=0.5, duty_cycle=50):
+    pwm.ChangeFrequency(freq)
+    pwm.start(duty_cycle)
+    time.sleep(duration)
     pwm.stop()
-    GPIO.cleanup()
+
+def test_buzzer(pwm):
+    try:
+        while True:
+            bip(pwm, freq=500)   # Bip grave
+            time.sleep(2)
+            bip(pwm, freq=1000)  # Bip aigu
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print("\nArrêt du programme.")
+    finally:
+        pwm.stop()
+        GPIO.cleanup()
+        print("GPIO nettoyé.")
+
+# ─── Exécution ────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    pwm = init_buzzer()
+    test_buzzer(pwm)
