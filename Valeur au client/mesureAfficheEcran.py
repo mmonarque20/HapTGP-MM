@@ -22,12 +22,11 @@ try:
         group.append(ecran.create_circle(x=120, y=120, radius=100, color=0xFFFFFF))
 
         # Affichage des données
-        group.append(ecran.create_text(f"{bme280.getTemperature():.1f} °C", scale=2, x=80, y=60, color=0x505000)[0])
-        group.append(ecran.create_text(f"{bme280.getHumidity():.1f} %", scale=2, x=80, y=80, color=0x00FFFF)[0])
-        group.append(ecran.create_text(f"{bme280.getPressure():.1f} hPa", scale=2, x=80, y=100, color=0xFF00FF)[0])
-        group.append(ecran.create_text(f"{bme280.getAltitude():.1f} m", scale=2, x=80, y=120, color=0x554002)[0])
-        group.append(ecran.create_text(f"{veml7700.getLuminosite():.1f} lux", scale=2, x=80, y=140, color=0x00FF00)[0])
-        
+        group.append(ecran.create_text(f"{bme280.getTemperature():.1f} °C", scale=2, x=80, y=60, color=0x505000))
+        group.append(ecran.create_text(f"{bme280.getHumidity():.1f} %", scale=2, x=80, y=80, color=0x00FFFF))
+        group.append(ecran.create_text(f"{bme280.getPressure():.1f} hPa", scale=2, x=80, y=100, color=0xFF00FF))
+        group.append(ecran.create_text(f"{bme280.getAltitude():.1f} m", scale=2, x=80, y=120, color=0x554002))
+        group.append(ecran.create_text(f"{veml7700.getLuminosite():.1f} lux", scale=2, x=80, y=140, color=0x00FF00))
         display.root_group = group
 
         time.sleep(5)
