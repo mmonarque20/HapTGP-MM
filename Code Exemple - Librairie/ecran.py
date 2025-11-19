@@ -1,3 +1,5 @@
+# Programme test de l'écran GCA01A et librairie pour utilisation dans d'autres programmes
+
 import board
 import time
 import displayio
@@ -38,8 +40,8 @@ def create_text(text, scale, x, y, color=0xAA00FF):
     group.append(label)
     return group   
 
-# Affiche la démo complète : fond, cercle, et deux textes
-def show_demo(display):
+# Affiche le test complète du module : fond, cercle, et deux textes
+def show_test(display):
     group = displayio.Group()
     display.root_group = group
     group.append(create_background(color=0x000000))  
@@ -55,7 +57,7 @@ def sleep_display(display):
 # Exemple d’utilisation
 if __name__ == "__main__":
     display = init_display()
-    show_demo(display)
+    show_test(display)
 
     try:
         while True:
