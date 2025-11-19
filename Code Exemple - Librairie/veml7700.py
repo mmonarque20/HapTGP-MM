@@ -19,5 +19,5 @@ def getLuminosite():
 
 if __name__ == "__main__":
     while True:
-        print("Ambient light: ", veml7700.light, "lux")
+        print(f"Ambient light: {getLuminosite():.1f} lux")
         time.sleep(2)
