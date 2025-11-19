@@ -27,8 +27,8 @@ def getAltitude():
 
 if __name__ == "__main__":
     while True:
-        print("\nTemperature: %0.1f C" % bme280.temperature)
-        print("Humidity: %0.1f %%" % bme280.relative_humidity)
-        print("Pressure: %0.1f hPa" % bme280.pressure)
-        print("Altitude = %0.2f meters" % bme280.altitude)
+        print(f"Température : {getTemperature():.1f} °C")
+        print(f"Humidité : {getHumidity():.1f} %")
+        print(f"Pression : {getPressure():.1f} hpa")
+        print(f"Altitude : {getAltitude():.1f} mètres" )
         time.sleep(2)
