@@ -1,5 +1,3 @@
-# Programme test de l'écran GCA01A et librairie pour utilisation dans d'autres programmes
-
 import board
 import time
 import displayio
@@ -12,7 +10,7 @@ from adafruit_gc9a01a import GC9A01A
 # Initialisation de l'écran GCA01A
 def init_display():
     displayio.release_displays()
-    bus = FourWire(board.SPI(), command=board.D25, chip_select=board.D8, reset=board.D27)
+    bus = FourWire(board.SPI(), command=board.D25, chip_select=board.D8, reset=board.D27, baudrate=60000000)
     return GC9A01A(bus, width=240, height=240)
 
 #Réinitialisation de l'écran: pour mise à jour de l'écran
@@ -35,19 +33,20 @@ def create_circle(x=120, y=120, radius=100, color=0xFFFFFF):
 
 # Crée un groupe de texte avec position et couleur personnalisées
 def create_text(text, scale, x, y, color=0xAA00FF):
-    group = displayio.Group(scale=scale, x=x, y=y)
     label = Label(terminalio.FONT, text=text, color=color)
-    group.append(label)
-    return group   
+    label.anchor_point = (0.5, 0.5)   
+    label.anchored_position = (x, y)
+    label.scale = scale
+    return label   
 
-# Affiche le test complète du module : fond, cercle, et deux textes
+# Affiche la démo complète : fond, cercle, et deux textes
 def show_test(display):
     group = displayio.Group()
     display.root_group = group
     group.append(create_background(color=0x000000))  
     group.append(create_circle(x=120, y=120, radius=100, color=0xFFFFFF))
-    group.append(create_text("Hello People!",scale=2, x=50, y=120, color=0x00FF00))
-    group.append(create_text("It's Mary :)",scale=2, x=50, y=150, color=0x0000FF))
+    group.append(create_text("Hello People!",scale=2, x=120, y=120, color=0x00FF00))
+    group.append(create_text("It's Mary :)",scale=2, x=120, y=150, color=0x0000FF))
 
 # Éteint visuellement l’écran 
 def sleep_display(display):
