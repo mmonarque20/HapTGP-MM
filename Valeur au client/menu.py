@@ -2,10 +2,10 @@ import time
 import displayio
 
 # Modules
-import horloge
-import ecran
-import neoPixel
-import buzzer
+import horloge  # horloge.py
+import ecran    # ecran.py
+import neoPixel # neoPixel.py
+import buzzer   # buzzer.py
 
 # --- CONSTANTES ---
 ROUGE = (255, 0, 0)
