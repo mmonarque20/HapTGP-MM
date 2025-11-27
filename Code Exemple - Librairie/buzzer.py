@@ -60,32 +60,31 @@ def jouer_intro(pwm):
 
 def jouer_musique(pwm):
     """
-    Joue une petite séquence musicale de 0.5 sec au total.
+    Joue le son 'Coin' (Pièce) : B5 -> E6
     """
-    # Définition des notes (fréquence en Hz, durée en secondes)
+    # Séquence : (Note MIDI, Durée de son, Durée pause)
     sequence = [
-        (880, 0.1),   # A5
-        (988, 0.1),   # B5
-        (1047, 0.1),  # C6
-        (1319, 0.1),  # E6
-        (1047, 0.1),  # C6
+        (83, 0.04, 0.0),  # B5 : Rapide
+        (88, 0.2, 0.0),  # E6 : Résonance
     ]
 
-    for freq, duree in sequence:
-        pwm.ChangeFrequency(freq)        # règle la fréquence
-        pwm.start(10)
-        time.sleep(duree)
-        pwm.stop()     # coupe le son entre les notes
-
+    for note_midi, duree_son, duree_pause in sequence:
+        freq = midi_vers_hertz(note_midi)
+        
+        pwm.ChangeFrequency(freq)
+        pwm.start(50)       
+        time.sleep(duree_son)
+        pwm.stop()
+        time.sleep(duree_son)
 
 # --- Fonction de test --- 
 def test_buzzer(pwm):
     try:
-        while True:
-            bip(pwm, freq=500)   # Bip grave
-            time.sleep(2)
-            bip(pwm, freq=1000)  # Bip aigu
-            time.sleep(2)
+        # On joue la musique Coin
+        jouer_musique(pwm) 
+        
+        # Si on veut tester l'intro 
+        # jouer_intro(pwm)
     except KeyboardInterrupt:
         print("\nArrêt du programme.")
     finally:
