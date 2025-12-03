@@ -1,134 +1,113 @@
 import time
 import displayio
-import math 
-
-# Modules
 import horloge
 import ecran
 import neoPixel
 import buzzer
 
-# --- CONSTANTES ---
-ROUGE = (100, 0, 0)
-JAUNE = (100, 100, 0)
-BLEU = (0, 0, 100)
-VERT_M = (140, 159, 16) 
+# --- RÉGLAGES ---
+LUMINOSITE = 0.2     # Puissance des LEDs
+VITESSE_CYCLE = 30   # Plus ce chiffre est grand, plus les couleurs changent vite
 
-COULEURS_LEDS = [ROUGE, JAUNE, BLEU]
+# --- COULEURS TEXTE (HEX) ---
+ROUGE_TXT = 0xFF0000
+VERT_TXT  = 0x00B400
+JAUNE_TXT = 0xFFC800
+BLEU_TXT  = 0x0000FF
+BLANC_TXT = 0xFFFFFF
+NOIR_FOND = 0x000000
 
-# --- REGLAGE VITESSE ---
-VITESSE_LEDS = 3.0
-
-DELAI_CHECK_RAPIDE = 0.1 
-DELAI_PAUSE_LONGUE = 0.8  
-
-# --- FONCTIONS ---
-
-def setup(display):
+def setup_ecran(display):
+    """Prépare l'affichage statique et dynamique."""
     try: display.auto_refresh = False
-    except AttributeError: pass 
+    except: pass 
 
-    # Fond
     group = displayio.Group()
-    group.append(ecran.create_background(color=0xFFFFFF))
+    group.append(ecran.create_background(color=NOIR_FOND))
     
-    # Texte statique
-    group.append(ecran.create_text("HapTGP MM", scale=3, x=120, y=50, color=0xFF0000))
-    lbl_instr = ecran.create_text("Tap pour commencer :)", scale=1, x=120, y=170, color=VERT_M, background_color=0xFFFFFF)
+    # Textes fixes
+    group.append(ecran.create_text("HAPTGP MM", scale=3, x=120, y=50, color=ROUGE_TXT, background_color=NOIR_FOND))
+    
+    lbl_quote = ecran.create_text("Let's go!", scale=2, x=120, y=180, color=VERT_TXT, background_color=NOIR_FOND)
+    lbl_instr = ecran.create_text("tap pour commencer :)", scale=1, x=120, y=210, color=BLANC_TXT, background_color=NOIR_FOND)
+    group.append(lbl_quote)
     group.append(lbl_instr)
     
-    # Texte dynamique
-    lbl_date = ecran.create_text("YYYY-MM-DD", scale=2, x=120, y=110, color=0x000000)
-    lbl_heure = ecran.create_text("00:00:00", scale=3, x=120, y=140, color=0x0000FF)
+    # Date et Heure
+    lbl_date = ecran.create_text("YYYY-MM-DD", scale=2, x=120, y=100, color=JAUNE_TXT, background_color=NOIR_FOND)
+    lbl_heure = ecran.create_text("00:00:00", scale=3, x=120, y=140, color=BLEU_TXT, background_color=NOIR_FOND)
     
     group.append(lbl_date)
     group.append(lbl_heure)
-
+    
     display.root_group = group
-    try: display.refresh()
-    except: pass
-
-    # État DELS et horloge
-    etat_led = {'color_index': 0}
-    etat_horloge = {'prochain_check': 0}
-
-    return lbl_date, lbl_heure, lbl_instr, etat_led, etat_horloge
-
-
-
-def update(rtc, pixels, now, lbl_date, lbl_heure, etat_led, etat_horloge):
-    needs_refresh = False
-
-    # --- 1. Gestion Horloge ---
-    if now >= etat_horloge['prochain_check']:
-        try:
-            heure_txt = horloge.get_heure(rtc)
-            if lbl_heure.text != heure_txt:
-                lbl_heure.text = heure_txt
-                lbl_date.text = horloge.get_date(rtc)
-                etat_horloge['prochain_check'] = now + DELAI_PAUSE_LONGUE
-                needs_refresh = True 
-            else:
-                etat_horloge['prochain_check'] = now + DELAI_CHECK_RAPIDE
-        except:
-            etat_horloge['prochain_check'] = now + DELAI_CHECK_RAPIDE
-
-    # --- 2. Gestion LEDs (RESPIRATION MATHÉMATIQUE) ---
+    display.refresh()
     
-    # Calcul de l'onde (valeur entre -1 et 1)
-    onde = math.sin(now * VITESSE_LEDS)
+    return lbl_date, lbl_heure
+
+def color_wheel(pos):
+    """
+    Génère une couleur en fonction d'une position (0 à 255).
+    Ordre demandé : VERT -> ROUGE -> BLEU
+    """
+    # S'assurer que la position est entre 0 et 255
+    if pos < 0 or pos > 255:
+        return (0, 0, 0)
     
-    # Transformation en luminosité (0.0 à 1.0)
-    luminosite_brute = (onde + 1) / 2
+    # 1er tiers : VERT vers ROUGE
+    if pos < 85:
+        return (int(pos * 3), int(255 - pos * 3), 0)
     
-    # Luminosité Finale
-    luminosite_finale = luminosite_brute ** 3 
-
-    # Changement de couleur
-    if luminosite_finale < 0.005: 
-        cycle = int(now / (3.14159 * 2 / VITESSE_LEDS))
-        etat_led['color_index'] = cycle % len(COULEURS_LEDS)
-
-    # Application
-    r_base, g_base, b_base = COULEURS_LEDS[etat_led['color_index']]
+    # 2ème tiers : ROUGE vers BLEU
+    elif pos < 170:
+        pos -= 85
+        return (int(255 - pos * 3), 0, int(pos * 3))
     
-    # Calcule couleur finale atténuée
-    r = int(r_base * luminosite_finale)
-    g = int(g_base * luminosite_finale)
-    b = int(b_base * luminosite_finale)
+    # 3ème tiers : BLEU vers VERT (retour au début)
+    else:
+        pos -= 170
+        return (0, int(pos * 3), int(255 - pos * 3))
 
-    try:
-        neoPixel.allumer_tous(pixels, r, g, b)
-    except:
-        pass
-            
-    return needs_refresh
-
-
-# --- MAIN ---
-if __name__=="__main__":
-    print("--- Mode Autonome ---")
+def menu_run():    
     pixels = neoPixel.init_pixels()
     pwm = buzzer.init_buzzer()
     display = ecran.init_display()
     rtc = horloge.init_horloge()
 
     try:
-        lbl_date, lbl_heure, lbl_instr, etat_led, etat_horloge = setup(display)
-        buzzer.jouer_intro(pwm)
+        lbl_date, lbl_heure = setup_ecran(display)
+        try: buzzer.jouer_intro(pwm)
+        except: pass
 
+        last_sec = 0
+        
         while True:
             now = time.monotonic()
-            ecran_a_change = update(rtc, pixels, now, lbl_date, lbl_heure, etat_led, etat_horloge)
             
-            if ecran_a_change:
-                try: display.refresh()
-                except: pass
-            pass
+            # --- HORLOGE ---
+            if int(now) != last_sec:
+                lbl_heure.text = horloge.get_heure(rtc)
+                lbl_date.text = horloge.get_date(rtc)
+                display.refresh()
+                last_sec = int(now)
+
+            # --- LEDS (Flux continu) ---
+            # On transforme le temps en une position de 0 à 255
+            # VITESSE_CYCLE permet d'accélérer ou ralentir le défilement
+            position_cycle = int(now * VITESSE_CYCLE) % 256
+            
+            r, g, b = color_wheel(position_cycle)
+            
+            neoPixel.allumer_tous(pixels, int(r*LUMINOSITE), int(g*LUMINOSITE), int(b*LUMINOSITE))
+
+            time.sleep(0.02) 
 
     except KeyboardInterrupt:
         print("\nArrêt.")
-    finally:
         neoPixel.eteindre_pixels(pixels)
         ecran.sleep_display(display)
-        if hasattr(pwm, 'deinit'): pwm.deinit()
+        try: pwm.deinit()
+        except: pass
+
+if __name__=="__main__":
+    menu_run()
