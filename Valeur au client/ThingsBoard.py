@@ -1,6 +1,6 @@
 # référence : https://thingsboard.io/docs/reference/python-client-sdk/
 """ Programme permettant d'envoyer les données du bme280 et veml7700 
-sur ThingsBoard  par MQTT seulement en "swipant" vers le haut sur l'écran"""
+sur ThingsBoard seulement en "swipant" vers le haut sur l'écran"""
 
 from tb_device_mqtt import TBDeviceMqttClient, TBPublishInfo
 import bme280
@@ -31,6 +31,7 @@ while not client.is_connected():
     print("Connexion en cours...")
     time.sleep(1)
 print("Connecté à ThingsBoard !")
+print("**Swipe vers le haut sur l'écran pour envoyer les données vers ThingsBoard**")
 
 # Envoie de données en swipant vers le haut
 try:
