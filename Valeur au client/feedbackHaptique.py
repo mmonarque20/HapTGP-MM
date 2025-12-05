@@ -1,4 +1,4 @@
-#Programme de feedback du moteur et du buzzer selon certains angles
+"""Programme de feedback du moteur et du buzzer selon certains angles"""
 
 from smbus2 import SMBus
 import time
@@ -63,19 +63,17 @@ def is_angle_target(angle, cibles=None, seuil=SEUIL_ANGLE):
 # --- FeedBack ---
 """ Programme run_feedback_system: Boucle principale du programme"""
 
-def jouer_buzzer(pwm):
-    buzzer.bip(pwm,freq=600,duration=0.5,duty_cycle=50)
 
-def jouer_haptique():
-    with SMBus(BUS_MOTEUR) as bus_moteur_trigger:
-        effet_long= 0x0C
-        moteurHaptique.jouer_sequence(bus_moteur_trigger,effet_id=effet_long, repetitions=4, duree_par_effet=0.3)   
+def jouer_haptique(bus):
+    effet_long= 0x0C
+    moteurHaptique.jouer_sequence(bus,effet_id=effet_long, repetitions=4, duree_par_effet=0.3)   
 
-def feedback(current_angle, pwm, haptic_triggered):
+def feedback(current_angle, pwm, haptic_triggered, bus):
     if is_angle_target(current_angle):
-        jouer_buzzer(pwm)
+        
         if not haptic_triggered:
-            jouer_haptique()
+            buzzer.jouer_musique(pwm)
+            jouer_haptique(bus)
             print(f"*** VIBRATION À {current_angle:.1f}° ***")
             haptic_triggered = True
     else:
